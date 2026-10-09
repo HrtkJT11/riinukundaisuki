@@ -210,8 +210,8 @@
             const [searchQuery, setSearchQuery] = React.useState("");
             const [selectedMember, setSelectedMember] = React.useState(null);
             const [activeTab, setActiveTab] = React.useState("current"); // current, matrix, member
-            const [autoLive, setAutoLive] = React.useState(false);
             const [showModal, setShowModal] = React.useState(false); // 原本資料モーダル表示フラグ
+            const [isMenuOpen, setIsMenuOpen] = React.useState(false); // サイドメニュー開閉フラグ
 
             const currentSlots = day === 1 ? SLOTS_DAY1 : SLOTS_DAY2;
 
@@ -221,23 +221,6 @@
                     setSelectedSlot(currentSlots[0]);
                 }
             }, [day]);
-
-            // 自動ライブタイマー (模擬)
-            React.useEffect(() => {
-                let interval;
-                if (autoLive) {
-                    interval = setInterval(() => {
-                        const now = new Date();
-                        const hours = String(now.getHours()).padStart(2, '0');
-                        const minutes = now.getMinutes() >= 30 ? '30' : '00';
-                        const timeStr = `${hours}:${minutes}`;
-                        if (currentSlots.includes(timeStr)) {
-                            setSelectedSlot(timeStr);
-                        }
-                    }, 10000);
-                }
-                return () => clearInterval(interval);
-            }, [autoLive, currentSlots]);
 
             // 現在の指定時間帯のシフトを取得
             const getActiveStaffAtSlot = (slot) => {
@@ -262,48 +245,89 @@
             const totalActiveCount = getActiveStaffAtSlot(selectedSlot).length;
 
             return (
-                <div className="min-h-screen flex flex-col pb-12">
+                <div className="min-h-screen flex flex-col pb-12 relative overflow-x-hidden">
+
+                    {/* サイドメニュー (スライドイン) */}
+                    <nav className={`fixed top-0 left-0 w-90 h-full bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out pt-16 ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <span className="font-bold text-slate-800 text-sm">TekSMaS メニュー</span>
+                            <button onClick={() => setIsMenuOpen(false)} className="text-slate-400 hover:text-slate-600">
+                                <i className="fa-solid fa-xmark text-lg"></i>
+                            </button>
+                        </div>
+                        <ul className="p-4 space-y-2 font-semibold text-slate-700 text-sm">
+                            <li><a href="#" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2.5 rounded-xl hover:bg-slate-100 transition-colors"><i className="fa-solid fa-clock mr-2.5 text-blue-600"></i>シフト確認</a></li>
+                            <li><a href="#" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2.5 rounded-xl hover:bg-slate-100 transition-colors"><i className="fa-regular fa-calendar-days mr-2.5 text-blue-600"></i>スケジュール</a></li>
+                            <li><a href="#" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2.5 rounded-xl hover:bg-slate-100 transition-colors"><i className="fa-solid fa-users mr-2.5 text-blue-600"></i>メンバー一覧</a></li>
+                            <li><a href="#" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2.5 rounded-xl hover:bg-slate-100 transition-colors"><i className="fa-solid fa-gear mr-2.5 text-slate-500"></i>設定</a></li>
+                        </ul>
+                        <div className="p-4 border-t border-slate-100 bg-red-50 text-[11px] text-red-400 leading-relaxed">
+                            <i className="fa-solid fa-circle-info mr-1 text-red-400"></i>
+                            とりあえず実装してみただけなのでまだ動作しないンゴよ
+                        </div>
+                    </nav>
+
+                    {/* 背景暗転マスク */}
+                    {isMenuOpen && (
+                        <div
+                            onClick={() => setIsMenuOpen(false)}
+                            className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-40 transition-opacity"
+                        ></div>
+                    )}
+
                     {/* Header */}
                     <header className="bg-slate-900 text-white shadow-md sticky top-0 z-30">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center space-x-3">
-                                <div className="bg-blue-600 text-white p-2.5 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-                                    <i className="fa-solid fa-train text-xl"></i>
+                            <div className="flex items-center space-x-2.5">
+                                {/* ハンバーガーボタン (React制御) */}
+                                <button
+                                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                    className="flex flex-col justify-between w-6 h-5 bg-transparent border-none cursor-pointer z-40 mr-1 focus:outline-none"
+                                    aria-label="メニュー開閉"
+                                >
+                                    <span className={`block w-full h-0.5 bg-cyan-400 rounded transition-all duration-300 ${isMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
+                                    <span className={`block w-full h-0.5 bg-cyan-400 rounded transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`}></span>
+                                    <span className={`block w-full h-0.5 bg-cyan-400 rounded transition-all duration-300 ${isMenuOpen ? '-rotate-45 -translate-y-2.5' : ''}`}></span>
+                                </button>
+
+                                <div className="bg-blue-600 text-white p-2 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                                    <i className="fa-solid fa-train text-lg sm:text-xl"></i>
                                 </div>
                                 <div>
-                                    <h1 className="text-lg font-bold leading-tight flex items-center gap-2">
-                                        総科祭 鉄道研究同好会
-                                        <span className="bg-blue-800 text-blue-200 text-xs px-2 py-0.5 rounded-full font-medium">シフト照会</span>
+                                    <h1 className="text-base sm:text-lg font-bold leading-tight flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                        <span>総科祭 鉄道研究同好会</span>
+                                        <span className="bg-blue-800 text-blue-200 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium">シフト照会</span>
                                     </h1>
-                                    <p className="text-xs text-slate-400">現在時刻・指定時間の担当者を一目で確認</p>
+                                    <p className="text-[11px] sm:text-xs text-slate-400 hidden xs:block">現在時刻・指定時間の担当者を一目で確認</p>
                                 </div>
                             </div>
 
                             {/* 日付・ライブモードトグル & 原本資料ボタン */}
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <div className="flex items-center space-x-2 bg-slate-800 p-1 rounded-xl border border-slate-700">
+                            <div className="flex items-center gap-2 flex-wrap ml-auto sm:ml-0">
+                                <div className="flex items-center space-x-1 sm:space-x-2 bg-slate-800 p-1 rounded-xl border border-slate-700">
                                     <button
                                         onClick={() => setDay(1)}
-                                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${day === 1 ? 'bg-blue-600 text-white shadow' : 'text-slate-300 hover:text-white'}`}
+                                        className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${day === 1 ? 'bg-blue-600 text-white shadow' : 'text-slate-300 hover:text-white'}`}
                                     >
-                                        <i className="fa-regular fa-calendar-days mr-1.5"></i>1日目 (9:30~)
+                                        <i className="fa-regular fa-calendar-days mr-1"></i>1日目 (9:30~)
                                     </button>
                                     <button
                                         onClick={() => setDay(2)}
-                                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${day === 2 ? 'bg-blue-600 text-white shadow' : 'text-slate-300 hover:text-white'}`}
+                                        className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${day === 2 ? 'bg-blue-600 text-white shadow' : 'text-slate-300 hover:text-white'}`}
                                     >
-                                        <i className="fa-regular fa-calendar-days mr-1.5"></i>2日目 (9:00~)
+                                        <i className="fa-regular fa-calendar-days mr-1"></i>2日目 (9:00~)
                                     </button>
                                 </div>
 
-                                {/* おすすめ配置箇所1: ヘッダー右上の原本資料ボタン */}
+                                {/* 原本資料ボタン */}
                                 <button
                                     onClick={() => setShowModal(true)}
-                                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm border border-emerald-500"
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm border border-emerald-500"
                                     title="原本PDF・スプレッドシート・画像を表示"
                                 >
                                     <i className="fa-solid fa-file-pdf"></i>
-                                    <span>シフト原本・画像</span>
+                                    <span className="hidden xs:inline">シフト原本・画像</span>
+                                    <span className="xs:hidden">原本</span>
                                 </button>
                             </div>
                         </div>
@@ -329,30 +353,25 @@
                                     1日目930~1000にて若干の人手不足が発生するものと予測。入れる方はChatからご連絡を。
                                 </span>
                             </div>
-                            {/*
-                            <span className="text-amber-700 font-semibold whitespace-nowrap bg-amber-100/80 px-2.5 py-1 rounded-md text-xs">
-                                混雑時はオープン/クローズ前後に要人員集中
-                            </span>
-                            */}
                         </div>
 
                         {/* Navigation Tabs */}
-                        <div className="flex border-b border-slate-200 text-sm font-medium">
+                        <div className="flex border-b border-slate-200 text-sm font-medium overflow-x-auto custom-scrollbar">
                             <button
                                 onClick={() => setActiveTab("current")}
-                                className={`pb-3 px-4 border-b-2 flex items-center gap-2 transition-all ${activeTab === "current" ? "border-blue-600 text-blue-600 font-bold" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+                                className={`pb-3 px-4 border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${activeTab === "current" ? "border-blue-600 text-blue-600 font-bold" : "border-transparent text-slate-500 hover:text-slate-800"}`}
                             >
                                 <i className="fa-solid fa-clock"></i> 時間帯別 担当状況
                             </button>
                             <button
                                 onClick={() => setActiveTab("matrix")}
-                                className={`pb-3 px-4 border-b-2 flex items-center gap-2 transition-all ${activeTab === "matrix" ? "border-blue-600 text-blue-600 font-bold" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+                                className={`pb-3 px-4 border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${activeTab === "matrix" ? "border-blue-600 text-blue-600 font-bold" : "border-transparent text-slate-500 hover:text-slate-800"}`}
                             >
                                 <i className="fa-solid fa-table-cells"></i> 全体タイムライン表
                             </button>
                             <button
                                 onClick={() => setActiveTab("member")}
-                                className={`pb-3 px-4 border-b-2 flex items-center gap-2 transition-all ${activeTab === "member" ? "border-blue-600 text-blue-600 font-bold" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+                                className={`pb-3 px-4 border-b-2 flex items-center gap-2 transition-all whitespace-nowrap ${activeTab === "member" ? "border-blue-600 text-blue-600 font-bold" : "border-transparent text-slate-500 hover:text-slate-800"}`}
                             >
                                 <i className="fa-solid fa-users"></i> メンバー個人のスケジュール
                             </button>
@@ -420,7 +439,7 @@
                                             <button
                                                 key={role.code}
                                                 onClick={() => setRoleFilter(role.code)}
-                                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1 ${roleFilter === role.code ? `${role.bg} ${role.text} shadow-sm` : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1 ${roleFilter === role.code ? `${role.bg}${role.text} shadow-sm` : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                                             >
                                                 <i className={`fa-solid ${role.icon} text-[10px]`}></i>
                                                 {role.code} ({role.name.split(' ')[0]})
@@ -552,7 +571,6 @@
                                         <p className="text-xs text-slate-500">横軸：時間帯（30分毎）/ 縦軸：メンバー</p>
                                     </div>
 
-                                    {/* おすすめ配置箇所2: マトリックス表上部ツールバー */}
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => setShowModal(true)}
@@ -751,7 +769,7 @@
                     {/* Footer */}
                     <footer className="mt-12 bg-slate-900 text-slate-400 text-xs py-6 text-center border-t border-slate-800">
                         <div className="max-w-7xl mx-auto px-4">
-                            <p>©2026 Seraruchan Digital Solutions.最終更新:2026年10月09日22時46分</p>
+                            <p>©2026 Seraruchan Digital Solutions.最終更新:2026年10月10日08時43分</p>
                             <a href="mailto:qwasdzxc0621@gmail.com?subject=シフト管理システムに関しての問い合わせ&amp;">お問い合わせ</a>
                         </div>
                     </footer>
