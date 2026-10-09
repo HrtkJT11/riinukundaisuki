@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>総科祭 鉄道研究同好会 シフト確認システム</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap"
+        rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Noto Sans JP', 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+
+<body class="text-slate-800 antialiased">
+    <div id="root"></div>
+
+    <script type="text/babel">
+
+        // 役割定義
+        const ROLES = {
+            NM: { code: "NM", name: "Nゲージ主幹", bg: "bg-blue-600", text: "text-white", border: "border-blue-700", icon: "fa-train-subway", desc: "Nゲージレイアウトのメイン操作・進行" },
+            CO: { code: "CO", name: "来客対応", bg: "bg-cyan-500", text: "text-white", border: "border-cyan-600", icon: "fa-hands-holding-child", desc: "展示の解説・入口案内・誘導" },
+            NC: { code: "NC", name: "Nゲージ補助", bg: "bg-emerald-600", text: "text-white", border: "border-emerald-700", icon: "fa-comments", desc: "Nゲージ運転体験の案内や補佐" },
+            GM: { code: "GM", name: "マネージャー (MGR)", bg: "bg-purple-600", text: "text-white", border: "border-purple-700", icon: "fa-user-tie", desc: "全体指揮・トラブル対応・混雑緩和" },
+            FO: { code: "FO", name: "応需要・流動対応", bg: "bg-amber-500", text: "text-white", border: "border-amber-600", icon: "fa-bolt", desc: "待機・混雑時のサポート・フレキシブル動向" },
+            OC: { code: "OC", name: "開け/締め対応", bg: "bg-rose-600", text: "text-white", border: "border-rose-700", icon: "fa-key", desc: "開店準備・閉店片付け・ピーク時対応" },
+        };
+
+        // タイムスロット定義 (1日目: 9:30~15:30)
+        const SLOTS_DAY1 = [
+            "09:30", "10:00", "10:30", "11:00", "11:30", "12:00",
+            "12:30", "13:00", "13:30", "14:00", "14:30", "15:00"
+        ];
+
+        // タイムスロット定義 (2日目: 9:00~15:00)
+        const SLOTS_DAY2 = [
+            "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+            "12:00", "12:30", "13:00", "13:30", "14:00", "14:30"
+        ];
+
+        // メンバーデータ (シフト案PDFより抽出)
+        const MEMBERS_DATA = [
+            {
+                id: "F2024116",
+                name: "世良 尚之",
+                note: "",
+                total1: "3:30",
+                total2: "4:00",
+                shifts1: { "09:30": "OC", "10:00": "OC", "10:30": "CO", "13:30": "FO", "14:00": "CO", "14:30": "CO", "15:00": "OC" },
+                shifts2: { "09:00": "CO", "09:30": "FO", "10:00": "FO", "10:30": "CO", "11:00": "CO", "11:30": "OC", "12:00": "CO", "12:30": "CO", "13:00": "CO", "13:30": "CO", "14:00": "CO", "14:30": "OC" }
+            },
+            {
+                id: "F2024204",
+                name: "石渡 大貴",
+                note: "扱い可",
+                total1: "0:00",
+                total2: "0:00",
+                shifts1: {},
+                shifts2: {}
+            },
+            {
+                id: "F2024303",
+                name: "岩崎 巧真",
+                note: "扱い可",
+                total1: "0:00",
+                total2: "0:00",
+                shifts1: {},
+                shifts2: {}
+            },
+            {
+                id: "F2024419",
+                name: "丹波 翔大",
+                note: "条件付",
+                total1: "1:00",
+                total2: "0:30",
+                shifts1: { "13:00": "CO", "13:30": "CO", "14:30": "NC", "15:00": "OC" },
+                shifts2: { "14:30": "OC" }
+            },
+            {
+                id: "f2025206",
+                name: "内山 晴翔",
+                note: "",
+                total1: "1:00",
+                total2: "1:00",
+                shifts1: { "13:00": "CO", "13:30": "CO" },
+                shifts2: { "09:30": "GM", "10:00": "FO" }
+            },
+            {
+                id: "f2025210",
+                name: "奥田 貫友",
+                note: "",
+                total1: "3:30",
+                total2: "0:00",
+                shifts1: { "10:30": "CO", "11:00": "FO", "12:00": "CO", "12:30": "CO", "14:00": "FO", "14:30": "FO", "15:00": "NC" },
+                shifts2: { "12:00": "CO", "12:30": "CO" }
+            },
+            {
+                id: "F2025217",
+                name: "佐久間 亮成",
+                note: "条件付",
+                total1: "2:00",
+                total2: "2:00",
+                shifts1: { "09:30": "OC", "10:00": "NC", "11:00": "GM", "11:30": "NC" },
+                shifts2: { "09:00": "GM", "09:30": "OC", "10:30": "GM", "11:00": "OC" }
+            },
+            {
+                id: "F2025221",
+                name: "谷口 幹尚",
+                note: "条件付",
+                total1: "2:00",
+                total2: "1:30",
+                shifts1: { "10:00": "GM", "10:30": "GM", "11:00": "GM", "11:30": "NC" },
+                shifts2: { "09:00": "OC", "13:00": "GM", "14:30": "NC" }
+            },
+            {
+                id: "f2025225",
+                name: "中村 恵吾",
+                note: "扱い可",
+                total1: "4:30",
+                total2: "1:00",
+                shifts1: { "10:00": "FO", "10:30": "FO", "11:00": "NC", "11:30": "NC", "12:00": "GM", "12:30": "GM", "13:00": "GM", "14:30": "GM", "15:00": "GM" },
+                shifts2: { "14:00": "NC", "14:30": "NC" }
+            },
+            {
+                id: "F2025607",
+                name: "河津 政宗",
+                note: "条件付",
+                total1: "2:00",
+                total2: "2:00",
+                shifts1: { "11:00": "NM", "11:30": "NM", "13:30": "GM", "14:00": "GM" },
+                shifts2: { "09:00": "NC", "09:30": "CO", "14:00": "NM", "14:30": "NM" }
+            },
+            {
+                id: "F2025608",
+                name: "菅野 圭太",
+                note: "",
+                total1: "1:30",
+                total2: "2:00",
+                shifts1: { "12:00": "NM", "12:30": "NM", "13:00": "NM" },
+                shifts2: { "12:00": "NM", "12:30": "NM", "13:00": "NM", "13:30": "NM" }
+            },
+            {
+                id: "F2025620",
+                name: "田中 亮成",
+                note: "",
+                total1: "0:00",
+                total2: "2:00",
+                shifts1: {},
+                shifts2: { "10:00": "GM", "10:30": "GM", "11:00": "GM", "11:30": "GM" }
+            },
+            {
+                id: "F2026235",
+                name: "山重 讓志郎",
+                note: "扱い可",
+                total1: "2:30",
+                total2: "3:00",
+                shifts1: { "09:30": "NM", "10:00": "NM", "10:30": "NM", "12:30": "FO", "13:00": "FO" },
+                shifts2: { "09:00": "GM", "09:30": "GM", "10:00": "GM", "10:30": "GM", "14:00": "NM", "14:30": "NM" }
+            },
+            {
+                id: "F2026309",
+                name: "尾沢 莉玖",
+                note: "",
+                total1: "2:00",
+                total2: "3:30",
+                shifts1: { "13:30": "CO", "14:00": "CO", "14:30": "CO", "15:00": "FO" },
+                shifts2: { "10:00": "CO", "10:30": "CO", "11:00": "CO", "11:30": "CO", "13:00": "CO", "13:30": "CO", "14:00": "CO" }
+            }
+        ];
+
+        function ShiftApp() {
+            const [day, setDay] = React.useState(1); // 1: 1日目, 2: 2日目
+            const [selectedSlot, setSelectedSlot] = React.useState("10:00");
+            const [roleFilter, setRoleFilter] = React.useState("ALL");
+            const [searchQuery, setSearchQuery] = React.useState("");
+            const [selectedMember, setSelectedMember] = React.useState(null);
+            const [activeTab, setActiveTab] = React.useState("current"); // current, matrix, member
+            const [autoLive, setAutoLive] = React.useState(false);
+            const [showModal, setShowModal] = React.useState(false); // 原本資料モーダル表示フラグ
+
+            const currentSlots = day === 1 ? SLOTS_DAY1 : SLOTS_DAY2;
+
+            // 日付切り替え時にスロット補正
+            React.useEffect(() => {
+                if (!currentSlots.includes(selectedSlot)) {
+                    setSelectedSlot(currentSlots[0]);
+                }
+            }, [day]);
+
+            // 自動ライブタイマー (模擬)
+            React.useEffect(() => {
+                let interval;
+                if (autoLive) {
+                    interval = setInterval(() => {
+                        const now = new Date();
+                        const hours = String(now.getHours()).padStart(2, '0');
+                        const minutes = now.getMinutes() >= 30 ? '30' : '00';
+                        const timeStr = `${hours}:${minutes}`;
+                        if (currentSlots.includes(timeStr)) {
+                            setSelectedSlot(timeStr);
+                        }
+                    }, 10000);
+                }
+                return () => clearInterval(interval);
+            }, [autoLive, currentSlots]);
+
+            // 現在の指定時間帯のシフトを取得
+            const getActiveStaffAtSlot = (slot) => {
+                return MEMBERS_DATA.map(member => {
+                    const shifts = day === 1 ? member.shifts1 : member.shifts2;
+                    const roleCode = shifts[slot] || null;
+                    return {
+                        ...member,
+                        roleCode,
+                        role: roleCode ? ROLES[roleCode] : null
+                    };
+                }).filter(m => m.roleCode !== null);
+            };
+
+            const activeStaffList = getActiveStaffAtSlot(selectedSlot).filter(m => {
+                const matchesRole = roleFilter === "ALL" || m.roleCode === roleFilter;
+                const matchesQuery = m.name.includes(searchQuery) || m.id.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesRole && matchesQuery;
+            });
+
+            // 全体の稼働人数
+            const totalActiveCount = getActiveStaffAtSlot(selectedSlot).length;
+
+            return (
+                <div className="min-h-screen flex flex-col pb-12">
+                    {/* Header */}
+                    <header className="bg-slate-900 text-white shadow-md sticky top-0 z-30">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center space-x-3">
+                                <div className="bg-blue-600 text-white p-2.5 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                                    <i className="fa-solid fa-train text-xl"></i>
+                                </div>
+                                <div>
+                                    <h1 className="text-lg font-bold leading-tight flex items-center gap-2">
+                                        総科祭 鉄道研究同好会
+                                        <span className="bg-blue-800 text-blue-200 text-xs px-2 py-0.5 rounded-full font-medium">シフト照会</span>
+                                    </h1>
+                                    <p className="text-xs text-slate-400">現在時刻・指定時間の担当者を一目で確認</p>
+                                </div>
+                            </div>
+
+                            {/* 日付・ライブモードトグル & 原本資料ボタン */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex items-center space-x-2 bg-slate-800 p-1 rounded-xl border border-slate-700">
+                                    <button
+                                        onClick={() => setDay(1)}
+                                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${day === 1 ? 'bg-blue-600 text-white shadow' : 'text-slate-300 hover:text-white'}`}
+                                    >
+                                        <i className="fa-regular fa-calendar-days mr-1.5"></i>1日目 (9:30~)
+                                    </button>
+                                    <button
+                                        onClick={() => setDay(2)}
+                                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${day === 2 ? 'bg-blue-600 text-white shadow' : 'text-slate-300 hover:text-white'}`}
+                                    >
+                                        <i className="fa-regular fa-calendar-days mr-1.5"></i>2日目 (9:00~)
+                                    </button>
+                                </div>
+
+                                {/* おすすめ配置箇所1: ヘッダー右上の原本資料ボタン */}
+                                <button
+                                    onClick={() => setShowModal(true)}
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm border border-emerald-500"
+                                    title="原本PDF・スプレッドシート・画像を表示"
+                                >
+                                    <i className="fa-solid fa-file-pdf"></i>
+                                    <span>シフト原本・画像</span>
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Container */}
+                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 flex-1 w-full space-y-6">
+
+                        {/* Note Banner */}
+                        <div className="bg-amber-50 border-l-4 border-amber-500 p-3.5 rounded-r-xl shadow-sm text-amber-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                                <i className="fa-solid fa-circle-info text-amber-600 text-base flex-shrink-0"></i>
+                                <span><strong>連絡事項:</strong> キッチンカー 10:30~15:00 / 食堂 11:00~14:30。人手が余っていたら交代で昼食OK！</span>
+                            </div>
+                            <span className="text-amber-700 font-semibold whitespace-nowrap bg-amber-100/80 px-2.5 py-1 rounded-md text-xs">
+                                混雑時はオープン/クローズ前後に要人員集中
+                            </span>
+                        </div>
+
+                        {/* Navigation Tabs */}
+                        <div className="flex border-b border-slate-200 text-sm font-medium">
+                            <button
+                                onClick={() => setActiveTab("current")}
+                                className={`pb-3 px-4 border-b-2 flex items-center gap-2 transition-all ${activeTab === "current" ? "border-blue-600 text-blue-600 font-bold" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+                            >
+                                <i className="fa-solid fa-clock"></i> 時間帯別 担当状況
+                            </button>
+                            <button
+                                onClick={() => setActiveTab("matrix")}
+                                className={`pb-3 px-4 border-b-2 flex items-center gap-2 transition-all ${activeTab === "matrix" ? "border-blue-600 text-blue-600 font-bold" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+                            >
+                                <i className="fa-solid fa-table-cells"></i> 全体タイムライン表
+                            </button>
+                            <button
+                                onClick={() => setActiveTab("member")}
+                                className={`pb-3 px-4 border-b-2 flex items-center gap-2 transition-all ${activeTab === "member" ? "border-blue-600 text-blue-600 font-bold" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+                            >
+                                <i className="fa-solid fa-users"></i> メンバー個人のスケジュール
+                            </button>
+                        </div>
+
+                        {/* TAB 1: 現在/指定時間の担当一覧 */}
+                        {activeTab === "current" && (
+                            <div className="space-y-6">
+                                {/* 時間選択バー */}
+                                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 space-y-4">
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                        <div className="flex items-center space-x-2">
+                                            <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-lg">
+                                                {day}日目 シフト
+                                            </span>
+                                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                                <i className="fa-regular fa-clock text-blue-600"></i>
+                                                時間帯を選択: <span className="text-blue-600 text-xl font-black">{selectedSlot} ~</span>
+                                            </h2>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                                            <span>稼働人数:</span>
+                                            <span className="bg-emerald-100 text-emerald-800 font-bold text-sm px-3 py-0.5 rounded-full">
+                                                {totalActiveCount} 名
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* タイムスロットボタン一覧 */}
+                                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 gap-1.5">
+                                        {currentSlots.map((slot) => {
+                                            const count = getActiveStaffAtSlot(slot).length;
+                                            const isSelected = selectedSlot === slot;
+                                            return (
+                                                <button
+                                                    key={slot}
+                                                    onClick={() => setSelectedSlot(slot)}
+                                                    className={`py-2 px-1 rounded-xl text-center flex flex-col items-center justify-center transition-all ${isSelected
+                                                        ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-500/30 ring-2 ring-blue-600 ring-offset-1'
+                                                        : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
+                                                        }`}
+                                                >
+                                                    <span className="text-xs font-semibold">{slot}</span>
+                                                    <span className={`text-[10px] mt-0.5 font-medium px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                                                        {count}名
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* 役割フィルター & 検索 */}
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200/80">
+                                    <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1 sm:pb-0">
+                                        <span className="text-xs font-bold text-slate-500 whitespace-nowrap mr-1">絞り込み:</span>
+                                        <button
+                                            onClick={() => setRoleFilter("ALL")}
+                                            className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${roleFilter === "ALL" ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                                        >
+                                            全員
+                                        </button>
+                                        {Object.values(ROLES).map((role) => (
+                                            <button
+                                                key={role.code}
+                                                onClick={() => setRoleFilter(role.code)}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1 ${roleFilter === role.code ? `${role.bg} ${role.text} shadow-sm` : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                                            >
+                                                <i className={`fa-solid ${role.icon} text-[10px]`}></i>
+                                                {role.code} ({role.name.split(' ')[0]})
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="relative min-w-[200px]">
+                                        <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs"></i>
+                                        <input
+                                            type="text"
+                                            placeholder="名前・IDで検索..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* 担当者カードグリッド */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                            <i className="fa-solid fa-user-check text-blue-600"></i>
+                                            {selectedSlot} ~ の担当スタッフ (該当 {activeStaffList.length}名)
+                                        </h3>
+                                    </div>
+
+                                    {activeStaffList.length === 0 ? (
+                                        <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 text-slate-400">
+                                            <i className="fa-solid fa-user-slash text-4xl mb-3 text-slate-300"></i>
+                                            <p className="font-semibold">該当する担当者はいません</p>
+                                            <p className="text-xs text-slate-400 mt-1">時間帯またはフィルターを変更してみてください</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                            {activeStaffList.map((staff) => {
+                                                const r = staff.role;
+                                                return (
+                                                    <div key={staff.id} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all p-4 flex flex-col justify-between relative overflow-hidden group">
+                                                        <div className={`absolute top-0 left-0 right-0 h-1.5 ${r ? r.bg : 'bg-slate-300'}`}></div>
+
+                                                        <div>
+                                                            <div className="flex items-start justify-between gap-2 mb-2">
+                                                                <div>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="text-[10px] font-mono text-slate-400 uppercase">{staff.id}</span>
+                                                                        {staff.note && (
+                                                                            <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded border border-slate-200">
+                                                                                {staff.note}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <h4 className="text-base font-bold text-slate-800">{staff.name}</h4>
+                                                                </div>
+
+                                                                {r && (
+                                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${r.bg} ${r.text} flex items-center gap-1 shadow-sm`}>
+                                                                        <i className={`fa-solid ${r.icon} text-[10px]`}></i>
+                                                                        {r.code}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+
+                                                            {r ? (
+                                                                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 my-2">
+                                                                    <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5 mb-0.5">
+                                                                        <span>{r.name}</span>
+                                                                    </div>
+                                                                    <p className="text-[11px] text-slate-500 leading-tight">{r.desc}</p>
+                                                                </div>
+                                                            ) : (
+                                                                <p className="text-xs text-slate-400 italic">勤務なし</p>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 mt-2">
+                                                            <span className="text-[11px]">本日の稼働計: <strong className="text-slate-700">{day === 1 ? staff.total1 : staff.total2}</strong></span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedMember(staff);
+                                                                    setActiveTab("member");
+                                                                }}
+                                                                className="text-blue-600 hover:text-blue-800 font-semibold text-[11px] flex items-center gap-1"
+                                                            >
+                                                                個人スケジュール <i className="fa-solid fa-chevron-right text-[9px]"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* 役割の解説凡例 */}
+                                <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                        <i className="fa-solid fa-tags text-blue-600"></i>
+                                        役割コード凡例一覧
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {Object.values(ROLES).map(role => (
+                                            <div key={role.code} className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                                                <span className={`px-2 py-0.5 rounded text-xs font-bold ${role.bg} ${role.text} flex items-center gap-1 shrink-0`}>
+                                                    <i className={`fa-solid ${role.icon} text-[10px]`}></i>
+                                                    {role.code}
+                                                </span>
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-800">{role.name}</p>
+                                                    <p className="text-[11px] text-slate-500">{role.desc}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 2: 全体タイムラインマトリックス */}
+                        {activeTab === "matrix" && (
+                            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 space-y-4">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div>
+                                        <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                                            <i className="fa-solid fa-table-cells text-blue-600"></i>
+                                            {day}日目 全体シフトマトリックス表
+                                        </h2>
+                                        <p className="text-xs text-slate-500">横軸：時間帯（30分毎）/ 縦軸：メンバー</p>
+                                    </div>
+
+                                    {/* おすすめ配置箇所2: マトリックス表上部ツールバー */}
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setShowModal(true)}
+                                            className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-300 font-semibold flex items-center gap-1.5 transition-all"
+                                        >
+                                            <i className="fa-solid fa-image text-emerald-600"></i> 原本画像 / PDFを表示
+                                        </button>
+
+                                        {/* 凡例ミニ */}
+                                        <div className="hidden sm:flex items-center gap-1.5 flex-wrap text-[10px]">
+                                            {Object.values(ROLES).map(r => (
+                                                <span key={r.code} className={`px-1.5 py-0.5 rounded ${r.bg} ${r.text} font-bold`}>
+                                                    {r.code}: {r.name.split(' ')[0]}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="overflow-x-auto custom-scrollbar border border-slate-200 rounded-xl">
+                                    <table className="w-full text-xs text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-slate-100 text-slate-700 border-b border-slate-200">
+                                                <th className="p-3 font-bold sticky left-0 bg-slate-100 z-10 w-36 border-r border-slate-200 shadow-sm">
+                                                    氏名 / 学籍ID
+                                                </th>
+                                                {currentSlots.map(slot => (
+                                                    <th
+                                                        key={slot}
+                                                        className={`p-2 text-center font-bold min-w-[60px] border-r border-slate-200 ${selectedSlot === slot ? 'bg-blue-100 text-blue-800 font-black' : ''}`}
+                                                    >
+                                                        {slot}
+                                                    </th>
+                                                ))}
+                                                <th className="p-2 text-center font-bold w-20">合計</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-200">
+                                            {MEMBERS_DATA.map((member) => {
+                                                const shifts = day === 1 ? member.shifts1 : member.shifts2;
+                                                const total = day === 1 ? member.total1 : member.total2;
+
+                                                return (
+                                                    <tr key={member.id} className="hover:bg-slate-50/80 transition-colors">
+                                                        <td className="p-2.5 font-medium sticky left-0 bg-white z-10 border-r border-slate-200 shadow-sm">
+                                                            <div className="font-bold text-slate-800 whitespace-nowrap">{member.name}</div>
+                                                            <div className="text-[10px] font-mono text-slate-400">{member.id}</div>
+                                                        </td>
+
+                                                        {currentSlots.map(slot => {
+                                                            const roleCode = shifts[slot];
+                                                            const role = roleCode ? ROLES[roleCode] : null;
+                                                            const isHighlight = selectedSlot === slot;
+
+                                                            return (
+                                                                <td
+                                                                    key={slot}
+                                                                    className={`p-1.5 text-center border-r border-slate-100 ${isHighlight ? 'bg-blue-50/60' : ''}`}
+                                                                >
+                                                                    {role ? (
+                                                                        <span className={`inline-block w-full py-1 rounded text-[10px] font-bold ${role.bg} ${role.text} shadow-xs`}>
+                                                                            {role.code}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-slate-200 font-light text-[10px]">-</span>
+                                                                    )}
+                                                                </td>
+                                                            );
+                                                        })}
+
+                                                        <td className="p-2 text-center font-bold text-slate-700 bg-slate-50">
+                                                            {total}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 3: メンバー個人の詳細スケジュール */}
+                        {activeTab === "member" && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {/* メンバーリスト選択 */}
+                                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                        <i className="fa-solid fa-user-gear text-blue-600"></i>
+                                        メンバーを選択
+                                    </h3>
+                                    <div className="space-y-1.5 max-h-[500px] overflow-y-auto custom-scrollbar pr-1">
+                                        {MEMBERS_DATA.map((m) => {
+                                            const isSelected = selectedMember && selectedMember.id === m.id;
+                                            return (
+                                                <button
+                                                    key={m.id}
+                                                    onClick={() => setSelectedMember(m)}
+                                                    className={`w-full text-left p-2.5 rounded-xl flex items-center justify-between transition-all ${isSelected
+                                                        ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-500/20'
+                                                        : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-100'
+                                                        }`}
+                                                >
+                                                    <div>
+                                                        <div className="text-sm font-bold">{m.name}</div>
+                                                        <div className={`text-[10px] font-mono ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>{m.id}</div>
+                                                    </div>
+                                                    <span className={`text-xs px-2 py-0.5 rounded-md ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                                                        計 {day === 1 ? m.total1 : m.total2}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* 個人詳細カード */}
+                                <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
+                                    {!selectedMember ? (
+                                        <div className="text-center py-16 text-slate-400 space-y-2">
+                                            <i className="fa-solid fa-address-card text-5xl text-slate-300"></i>
+                                            <p className="font-semibold text-slate-600">左側のリストからメンバーを選択してください</p>
+                                            <p className="text-xs">選択したスタッフの1日の役割・タイムライン詳細が表示されます</p>
+                                        </div>
+                                    ) : (
+                                        <React.Fragment>
+                                            {/* ヘッダー情報 */}
+                                            <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-4 gap-3">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-mono text-slate-400 uppercase">{selectedMember.id}</span>
+                                                        {selectedMember.note && (
+                                                            <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 font-semibold">
+                                                                {selectedMember.note}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <h2 className="text-2xl font-black text-slate-800">{selectedMember.name}</h2>
+                                                </div>
+
+                                                <div className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 text-right">
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase">本日のシフト時間</p>
+                                                    <p className="text-xl font-black text-blue-600">{day === 1 ? selectedMember.total1 : selectedMember.total2}</p>
+                                                </div>
+                                            </div>
+
+                                            {/* タイムライン箇条書き */}
+                                            <div>
+                                                <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                                                    <i className="fa-regular fa-clock text-blue-600"></i>
+                                                    {day}日目のシフトタイムスケジュール
+                                                </h3>
+
+                                                {Object.keys(day === 1 ? selectedMember.shifts1 : selectedMember.shifts2).length === 0 ? (
+                                                    <div className="p-8 text-center bg-slate-50 rounded-xl text-slate-400 text-xs">
+                                                        本日のシフト割り当てはありません (休み)
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-2.5">
+                                                        {currentSlots.map((slot) => {
+                                                            const shifts = day === 1 ? selectedMember.shifts1 : selectedMember.shifts2;
+                                                            const roleCode = shifts[slot];
+                                                            const role = roleCode ? ROLES[roleCode] : null;
+
+                                                            if (!role) return null;
+
+                                                            return (
+                                                                <div key={slot} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/70 hover:border-blue-300 transition-all">
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <span className="text-xs font-bold text-slate-700 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                                                                            {slot} ~
+                                                                        </span>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className={`px-2.5 py-0.5 rounded text-xs font-bold ${role.bg} ${role.text}`}>
+                                                                                {role.code}
+                                                                            </span>
+                                                                            <span className="text-xs font-bold text-slate-800">{role.name}</span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <p className="text-xs text-slate-500 hidden sm:block text-right">{role.desc}</p>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </React.Fragment>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="mt-12 bg-slate-900 text-slate-400 text-xs py-6 text-center border-t border-slate-800">
+                        <div className="max-w-7xl mx-auto px-4">
+                            <p>©2026 Seraruchan Digital Solutions.最終更新:2026年10月09日22時46分</p>
+                            <a href="mailto:qwasdzxc0621@gmail.com?subject=シフト管理システムに関しての問い合わせ&amp;">お問い合わせ</a>
+                        </div>
+                    </footer>
+
+                    {/* 原本PDF・画像・スプレッドシート モーダル */}
+                    {showModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+                            <div className="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 space-y-5 max-h-[90vh] flex flex-col">
+                                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                                    <div className="flex items-center gap-2 text-slate-800 font-bold text-base">
+                                        <i className="fa-solid fa-folder-open text-emerald-600"></i>
+                                        シフト原本・関連ファイル一覧
+                                    </div>
+                                    <button
+                                        onClick={() => setShowModal(false)}
+                                        className="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 transition-all"
+                                    >
+                                        <i className="fa-solid fa-xmark text-lg"></i>
+                                    </button>
+                                </div>
+
+                                <div className="space-y-4 overflow-y-auto custom-scrollbar pr-1 flex-1">
+                                    <p className="text-xs text-slate-600">
+                                        元のスプレッドシートやPDFダウンロード、または画像化したシフト表を確認できます。
+                                    </p>
+
+                                    {/* リンクボタン群 */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                                        <a
+                                            href="./assets/総科シフト.pdf"
+                                            download
+                                            className="p-3.5 rounded-xl border border-red-200 bg-red-50/60 hover:bg-red-100/80 transition-all flex items-center justify-between group"
+                                        >
+                                            <div className="flex items-center space-x-3">
+                                                <div className="bg-red-600 text-white p-2.5 rounded-lg">
+                                                    <i className="fa-solid fa-file-pdf text-lg"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs font-bold text-slate-800 group-hover:text-red-800">シフト全項 PDF ダウンロード</div>
+                                                    <div className="text-[11px] text-slate-500">印刷用（全4ページ）</div>
+                                                </div>
+                                            </div>
+                                            <i className="fa-solid fa-download text-xs text-red-600"></i>
+                                        </a>
+                                    </div>
+
+                                    {/* シフト画像プレビュー領域 */}
+                                    <div className="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                            <span><i className="fa-regular fa-image text-blue-600 mr-1"></i> シフト表 画像プレビュー ({day}日目)</span>
+                                            <span className="text-[11px] text-slate-400 font-normal">タップで拡大可能</span>
+                                        </div>
+                                        <div className="bg-white border border-slate-200 rounded-lg p-2 text-center max-h-72 overflow-auto custom-scrollbar">
+                                            <img
+                                                src={`./assets/Schedule_day${day}.jpg`}
+                                                alt={`シフト表 ${day}日目 画像`}
+                                                className="w-full rounded-md shadow-xs object-contain mx-auto"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="pt-2 border-t border-slate-100 flex justify-end">
+                                    <button
+                                        onClick={() => setShowModal(false)}
+                                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all"
+                                    >
+                                        閉じる
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const rootElement = document.getElementById('root');
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<ShiftApp />);
+    </script>
+</body>
+
+</html>
