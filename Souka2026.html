@@ -58,7 +58,7 @@
             const [loading, setLoading] = React.useState(false);
 
             // ★発行されたGASのURLに置き換えてください
-            const GAS_URL = "YOUR_GAS_WEB_APP_URL_HERE";
+            const GAS_URL = "https://script.google.com/macros/s/AKfycbxypCkPhb_HeI21scLpOvZgGNA7ZYkHYZEAJodfSmovSDZZ5nD8rXWyqc_Aagb4nvZ-/exec";
 
             const handleRating = (val) => {
                 if (loading || submitted) return;
@@ -848,6 +848,7 @@
                         )}
 
                     </main>
+                    <RatingWidget />
 
                     {/* Footer */}
                     <footer className="mt-12 bg-slate-900 text-slate-400 text-xs py-6 text-center border-t border-slate-800">
