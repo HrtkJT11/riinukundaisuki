@@ -326,7 +326,7 @@
                 note: "",
                 total1: "2:00",
                 total2: "3:30",
-                shifts1: { "13:30": "CO", "14:00": "CO", "14:30": "CO", "15:00": "FO" },
+                shifts1: { "14:00": "CO", "14:30": "CO", "15:00": "FO" },
                 shifts2: { "10:00": "CO", "10:30": "CO", "11:00": "CO", "11:30": "CO", "13:00": "CO", "13:30": "CO", "14:00": "CO" }
             }
         ];
@@ -478,7 +478,15 @@
                             <div className="flex items-center gap-2">
                                 <i className="fa-solid fa-triangle-exclamation text-red-600 text-base flex-shrink-0"></i>
                                 <span><strong>連絡事項【緊急度：高】:</strong>
-                                    【急募】一日目1030~1100にてNMを、二日目1330~1430にてGMを緊急募集します。Chat若しくは私の個人LINEに至急ご連絡を。
+                                    【急募】一日目1030~1100にてNMを、二日目1330~1430にてGMを緊急募集します。入れる方はChat若しくは私の個人LINEに至急ご連絡を。
+                                </span>
+                            </div>
+                        </div>
+                        <div className="bg-green-50 border-l-4 border-green-500 p-3.5 rounded-r-xl shadow-sm text-green-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                                <i className="fa-solid fa-triangle-exclamation text-green-600 text-base flex-shrink-0"></i>
+                                <span><strong>連絡事項【緊急度：低】:</strong>
+                                    【ゆる募】一日目1330~1400にて流動需要対応もしくは来客対応担当を募集します。入れる方はChat若しくは私の個人LINEに至急ご連絡を。
                                 </span>
                             </div>
                         </div>
@@ -914,8 +922,16 @@
                     {/* Footer */}
                     <footer className="mt-12 bg-slate-900 text-slate-400 text-xs py-6 text-center border-t border-slate-800">
                         <div className="max-w-7xl mx-auto px-4">
-                            <p>©2026 Seraruchan Digital Solutions.最終更新:2026年10月10日21時50分</p>
-                            <a href="mailto:qwasdzxc0621@gmail.com?subject=シフト管理システムに関しての問い合わせ&amp;">お問い合わせ</a>
+                            <p>
+                                ©2026 Seraruchan Digital Solutions.
+                            </p>
+                            <p className="font-bold bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                                このページの作成には一部AIを利用しています。
+                            </p>
+                            <p>
+                                最終更新:2026年10月10日23時28分
+                            </p>
+                            <a href="mailto:qwasdzxc0621@gmail.com?subject=シフト管理システムに関しての問い合わせ&amp;" className="text-blue-500 hover:text-blue-600">お問い合わせ</a>
                         </div>
                     </footer>
 
