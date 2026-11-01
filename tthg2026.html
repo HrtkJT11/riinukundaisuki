@@ -16,9 +16,7 @@
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 
     <style>
         body {
@@ -174,10 +172,10 @@
             );
         }
 
-        // 状態（W: 稼働, B: 休憩）
+        // 状態定義 (W: Work / B: Break)
         const ROLES = {
             W: { code: "W", name: "稼働 (Work)", bg: "bg-blue-600", text: "text-white", border: "border-blue-700", icon: "fa-user-gear", desc: "ブース内対応・展示運用" },
-            B: { code: "B", name: "休憩 (Break)", bg: "bg-slate-300", text: "text-slate-700", border: "border-slate-400", icon: "fa-mug-hot", desc: "休憩・自由時間" },
+            B: { code: "B", name: "休憩 (Break)", bg: "bg-slate-300", text: "text-slate-700", border: "border-slate-400", icon: "fa-mug-hot", desc: "休憩・自由時間・水分補給" },
         };
 
         // 15分区切りのタイムスロット (10:00 ~ 15:00, 計20スロット)
@@ -189,55 +187,61 @@
             "14:00", "14:15", "14:30", "14:45"
         ];
 
-        // 基準パターン W-B-W-W-B
-        const PATTERN = ["W", "B", "W", "W", "B"];
-
-        // 資格区分
+        // 資格区分定義
         const QUAL_CERTIFIED = "✅認定Nゲージ技術者";
         const QUAL_UNCERTIFIED = "🔰Nゲージ補助扱者";
         const QUAL_GENERAL = "🙂一般スタッフ";
 
-        // メンバー定義と位相（オフセット）の割り当て
-        // f2024204(石渡) と f2024303(岩崎) は課題研究班として同時にBにならないよう位相を分離（例: 0と2）
+        // 実用型交代グループ（45分勤務・15分休憩ベース＋1時間以上連続勤務時の30分休憩延長設計）
+        // グループ1: 標準 45W - 15B
+        // グループ2: オフセット型 (15W - 15B - 45W - 15B)
+        // グループ3: ピーク時カバー 60W（4枠勤務）後に 30B（2枠拡張休憩）
+        // グループ4: ピーク時後半カバー 60W（4枠勤務）後に 30B（2枠拡張休憩）
+        const GROUP_PATTERNS = {
+            1: ["W", "W", "W", "B", "W", "W", "W", "B", "W", "W", "W", "B", "W", "W", "W", "B", "W", "W", "W", "B"],
+            2: ["W", "B", "W", "W", "W", "B", "W", "W", "W", "B", "W", "W", "W", "B", "W", "W", "W", "B", "W", "W"],
+            3: ["W", "W", "W", "W", "B", "B", "W", "W", "W", "B", "W", "W", "W", "W", "B", "B", "W", "W", "W", "B"],
+            4: ["W", "W", "B", "W", "W", "W", "W", "B", "B", "W", "W", "W", "B", "W", "W", "W", "W", "B", "B", "W"]
+        };
+
+        // メンバーリスト & グループ割り当て
+        // ※課題研究班の f2024204(石渡) はグループ1、f2024303(岩崎) はグループ2 に配置し、同時に休憩にならないよう完全排他化
         const RAW_MEMBERS = [
-            { id: "f2024204", name: "石渡 大貴", qual: QUAL_CERTIFIED, isResearch: true, offset: 0 },
-            { id: "f2024303", name: "岩崎 巧真", qual: QUAL_CERTIFIED, isResearch: true, offset: 2 },
-            { id: "f2026235", name: "山重 讓志郎", qual: QUAL_CERTIFIED, offset: 1 },
-            { id: "f2025217", name: "佐久間 亮成", qual: QUAL_UNCERTIFIED, offset: 3 },
-            { id: "f2024419", name: "丹波 翔大", qual: QUAL_UNCERTIFIED, offset: 4 },
-            { id: "f2025607", name: "河津 政宗", qual: QUAL_UNCERTIFIED, offset: 0 },
-            { id: "F2024116", name: "世良 尚之", qual: QUAL_GENERAL, offset: 1 },
-            { id: "F2025206", name: "内山 晴翔", qual: QUAL_GENERAL, offset: 2 },
-            { id: "F2025210", name: "奥田 貫友", qual: QUAL_GENERAL, offset: 3 },
-            { id: "F2025221", name: "谷口 幹尚", qual: QUAL_GENERAL, offset: 4 },
-            { id: "F2025225", name: "中村 恵吾", qual: QUAL_GENERAL, offset: 0 },
-            { id: "F2025608", name: "菅野 圭太", qual: QUAL_GENERAL, offset: 1 },
-            { id: "F2025620", name: "田中 亮成", qual: QUAL_GENERAL, offset: 2 },
-            { id: "F2026309", name: "尾沢 莉玖", qual: QUAL_GENERAL, offset: 3 }
+            { id: "f2024204", name: "石渡 大貴", qual: QUAL_CERTIFIED, isResearch: true, group: 1 },
+            { id: "f2024303", name: "岩崎 巧真", qual: QUAL_CERTIFIED, isResearch: true, group: 2 },
+            { id: "f2026235", name: "山重 讓志郎", qual: QUAL_CERTIFIED, isResearch: false, group: 3 },
+            { id: "f2025217", name: "佐久間 亮成", qual: QUAL_UNCERTIFIED, isResearch: false, group: 4 },
+            { id: "f2024419", name: "丹波 翔大", qual: QUAL_UNCERTIFIED, isResearch: false, group: 1 },
+            { id: "f2025607", name: "河津 政宗", qual: QUAL_UNCERTIFIED, isResearch: false, group: 2 },
+            { id: "F2024116", name: "世良 尚之", qual: QUAL_GENERAL, isResearch: false, group: 3 },
+            { id: "F2025206", name: "内山 晴翔", qual: QUAL_GENERAL, isResearch: false, group: 4 },
+            { id: "F2025210", name: "奥田 貫友", qual: QUAL_GENERAL, isResearch: false, group: 1 },
+            { id: "F2025221", name: "谷口 幹尚", qual: QUAL_GENERAL, isResearch: false, group: 2 },
+            { id: "F2025225", name: "中村 恵吾", qual: QUAL_GENERAL, isResearch: false, group: 3 },
+            { id: "F2025608", name: "菅野 圭太", qual: QUAL_GENERAL, isResearch: false, group: 4 },
+            { id: "F2025620", name: "田中 亮成", qual: QUAL_GENERAL, isResearch: false, group: 1 },
+            { id: "F2026309", name: "尾沢 莉玖", qual: QUAL_GENERAL, isResearch: false, group: 2 }
         ];
 
-        // 15分刻みパターン適用データの生成
+        // メンバーデータ生成と稼働時間計算
         const MEMBERS_DATA = RAW_MEMBERS.map((m) => {
+            const pattern = GROUP_PATTERNS[m.group];
             const shifts = {};
             let wCount = 0;
 
-            SLOTS.forEach((slot, slotIdx) => {
-                // 各メンバー固有のoffsetを足して位相をずらし、循環パターンを適用
-                const patternIdx = (slotIdx + m.offset) % PATTERN.length;
-                const roleCode = PATTERN[patternIdx];
+            SLOTS.forEach((slot, idx) => {
+                const roleCode = pattern[idx];
                 shifts[slot] = roleCode;
                 if (roleCode === "W") wCount++;
             });
 
-            // 稼働時間の計算 (1枠=15分)
             const totalMinutes = wCount * 15;
             const hours = Math.floor(totalMinutes / 60);
             const mins = totalMinutes % 60;
-            const totalFormatted = `${hours}:${mins < 10 ? '0' : ''}${mins}`;
+            const totalFormatted = `${hours}時間${mins > 0 ? `${mins}分` : ''}`;
 
             return {
                 ...m,
-                note: m.qual,
                 total: totalFormatted,
                 shifts
             };
@@ -269,7 +273,8 @@
                 return matchesRole && matchesQuery;
             });
 
-            const totalActiveCount = getActiveStaffAtSlot(selectedSlot).filter(m => m.roleCode === "W").length;
+            const totalWorkCount = getActiveStaffAtSlot(selectedSlot).filter(m => m.roleCode === "W").length;
+            const totalBreakCount = getActiveStaffAtSlot(selectedSlot).filter(m => m.roleCode === "B").length;
 
             return (
                 <div className="min-h-screen flex flex-col pb-12 relative overflow-x-hidden">
@@ -283,7 +288,7 @@
                             </button>
                         </div>
                         <ul className="p-4 space-y-2 font-semibold text-slate-700 text-sm">
-                            <li><a href="#" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2.5 rounded-xl hover:bg-slate-100 transition-colors"><i className="fa-solid fa-clock mr-2.5 text-blue-600"></i>15分シフト確認</a></li>
+                            <li><a href="#" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2.5 rounded-xl hover:bg-slate-100 transition-colors"><i className="fa-solid fa-clock mr-2.5 text-blue-600"></i>シフト確認</a></li>
                             <li><a href="#" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2.5 rounded-xl hover:bg-slate-100 transition-colors"><i className="fa-solid fa-users mr-2.5 text-blue-600"></i>メンバー一覧</a></li>
                         </ul>
                     </nav>
@@ -315,9 +320,9 @@
                                 <div>
                                     <h1 className="text-base sm:text-lg font-bold leading-tight flex flex-wrap items-center gap-1.5 sm:gap-2">
                                         <span>鉄道ではぐくむ幸</span>
-                                        <span className="bg-blue-800 text-blue-200 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium">15分シフト</span>
+                                        <span className="bg-blue-800 text-blue-200 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium">45W-15B標準モデル</span>
                                     </h1>
-                                    <p className="text-[11px] sm:text-xs text-slate-400">TekSMaS - 15分区切り ローテーションモデル</p>
+                                    <p className="text-[11px] sm:text-xs text-slate-400">TekSMaS - 実用型シフト管理システム</p>
                                 </div>
                             </div>
                         </div>
@@ -330,7 +335,7 @@
                         <div className="bg-blue-50 border-l-4 border-blue-500 p-3.5 rounded-r-xl shadow-sm text-blue-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                                 <i className="fa-solid fa-circle-info text-blue-600 text-base flex-shrink-0"></i>
-                                <span><strong>シフト運用規則:</strong> 10:00〜15:00 (15分刻み/全20枠) のローテーションパターン [W-B-W-W-B] を適用。課題研究班 (f2024204石渡 / f2024303岩崎) は同時休憩にならないよう調整済みです。</span>
+                                <span><strong>運用ガイド:</strong> 基本は45分勤務・15分休憩（45W-15B）。ピーク等で連続勤務が1時間（4スロット）に及んだ場合は休憩を30分（2スロット）に拡大する疲労防止モデルを適用しています。</span>
                             </div>
                         </div>
 
@@ -372,16 +377,18 @@
                                             </h2>
                                         </div>
 
-                                        <div className="flex items-center gap-2 text-xs text-slate-500">
-                                            <span>稼働人数 (W):</span>
-                                            <span className="bg-emerald-100 text-emerald-800 font-bold text-sm px-3 py-0.5 rounded-full">
-                                                {totalActiveCount} 名
+                                        <div className="flex items-center gap-3 text-xs">
+                                            <span className="bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full">
+                                                稼働 (W): {totalWorkCount} 名
+                                            </span>
+                                            <span className="bg-slate-200 text-slate-700 font-bold px-3 py-1 rounded-full">
+                                                休憩 (B): {totalBreakCount} 名
                                             </span>
                                         </div>
                                     </div>
 
                                     {/* タイムスロットボタン一覧 */}
-                                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-1.5">
+                                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1.5">
                                         {SLOTS.map((slot) => {
                                             const wStaff = getActiveStaffAtSlot(slot).filter(m => m.roleCode === "W").length;
                                             const isSelected = selectedSlot === slot;
@@ -653,7 +660,7 @@
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <h2 className="text-2xl font-black text-slate-800">{selectedMember.name}</h2>
+                                                    <h2 className="text-2xl font-black text-slate-800 mt-1">{selectedMember.name}</h2>
                                                 </div>
 
                                                 <div className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 text-right">
