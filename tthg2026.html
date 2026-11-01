@@ -180,21 +180,22 @@
             B: { code: "B", name: "休憩 (Break)", bg: "bg-slate-300", text: "text-slate-700", border: "border-slate-400", icon: "fa-mug-hot", desc: "休憩・自由時間" },
         };
 
-        // 15分区切りのタイムスロット (09:30 ~ 15:30)
+        // 15分区切りのタイムスロット (10:00 ~ 15:00, 計20スロット)
         const SLOTS = [
-            "09:30", "09:45", "10:00", "10:15", "10:30", "10:45",
-            "11:00", "11:15", "11:30", "11:45", "12:00", "12:15",
-            "12:30", "12:45", "13:00", "13:15", "13:30", "13:45",
-            "14:00", "14:15", "14:30", "14:45", "15:00", "15:15"
+            "10:00", "10:15", "10:30", "10:45",
+            "11:00", "11:15", "11:30", "11:45",
+            "12:00", "12:15", "12:30", "12:45",
+            "13:00", "13:15", "13:30", "13:45",
+            "14:00", "14:15", "14:30", "14:45"
         ];
 
         // 基準パターン W-B-W-W-B
         const PATTERN = ["W", "B", "W", "W", "B"];
 
         // 資格区分
-        const QUAL_CERTIFIED = "認定Nゲージ技術者";
-        const QUAL_UNCERTIFIED = "Nゲージ補助担当";
-        const QUAL_GENERAL = "一般スタッフ";
+        const QUAL_CERTIFIED = "✅認定Nゲージ技術者";
+        const QUAL_UNCERTIFIED = "🔰Nゲージ補助扱者";
+        const QUAL_GENERAL = "🙂一般スタッフ";
 
         // メンバー定義と位相（オフセット）の割り当て
         // f2024204(石渡) と f2024303(岩崎) は課題研究班として同時にBにならないよう位相を分離（例: 0と2）
@@ -243,7 +244,7 @@
         });
 
         function ShiftApp() {
-            const [selectedSlot, setSelectedSlot] = React.useState("09:30");
+            const [selectedSlot, setSelectedSlot] = React.useState("10:00");
             const [roleFilter, setRoleFilter] = React.useState("ALL");
             const [searchQuery, setSearchQuery] = React.useState("");
             const [selectedMember, setSelectedMember] = React.useState(null);
@@ -329,7 +330,7 @@
                         <div className="bg-blue-50 border-l-4 border-blue-500 p-3.5 rounded-r-xl shadow-sm text-blue-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                                 <i className="fa-solid fa-circle-info text-blue-600 text-base flex-shrink-0"></i>
-                                <span><strong>シフト運用規則:</strong> 15分単位のローテーションパターン [W-B-W-W-B] を位相調整して自動配置。課題研究班 (f2024204石渡 / f2024303岩崎) は同時休憩にならないよう調整済みです。</span>
+                                <span><strong>シフト運用規則:</strong> 10:00〜15:00 (15分刻み/全20枠) のローテーションパターン [W-B-W-W-B] を適用。課題研究班 (f2024204石渡 / f2024303岩崎) は同時休憩にならないよう調整済みです。</span>
                             </div>
                         </div>
 
@@ -463,14 +464,14 @@
                                                                     <span className="text-[10px] font-mono text-slate-400 uppercase">{staff.id}</span>
                                                                     {staff.isResearch && (
                                                                         <span className="text-[10px] bg-purple-50 text-purple-700 border border-purple-200 px-1 py-0.2 rounded font-bold">
-                                                                            課題研究班
+                                                                            👥課題研究班
                                                                         </span>
                                                                     )}
                                                                     <span className={`text-[10px] px-1.5 py-0.2 rounded border font-semibold ${isCertified
-                                                                            ? 'bg-amber-50 text-amber-700 border-amber-300'
-                                                                            : isUncertified
-                                                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                                                                                : 'bg-slate-50 text-slate-600 border-slate-200'
+                                                                        ? 'bg-amber-50 text-amber-700 border-amber-300'
+                                                                        : isUncertified
+                                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                                                                            : 'bg-slate-50 text-slate-600 border-slate-200'
                                                                         }`}>
                                                                         {staff.qual}
                                                                     </span>
@@ -702,7 +703,7 @@
                     {/* Footer */}
                     <footer className="mt-12 bg-slate-900 text-slate-400 text-xs py-6 text-center border-t border-slate-800">
                         <div className="max-w-7xl mx-auto px-4">
-                            <p>©2026 Seraruchan Digital Solutions.  Insragram:<a href="https://www.instagram.com/serarine.524r/?hl=ja">@serarine.524r</a></p>
+                            <p>©2026 Seraruchan Digital Solutions.</p>
                             <p className="font-bold bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
                                 このページの作成には一部AIを利用しています。
                             </p>
