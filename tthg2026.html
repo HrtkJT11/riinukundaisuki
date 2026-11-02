@@ -172,9 +172,10 @@
             );
         }
 
-        // 状態定義 (W: Work / B: Break)
+        // 状態定義 (W: Work / S: Simulator / B: Break)
         const ROLES = {
-            W: { code: "W", name: "稼働 (Work)", bg: "bg-blue-600", text: "text-white", border: "border-blue-700", icon: "fa-user-gear", desc: "ブース内対応・展示運用" },
+            W: { code: "W", name: "一般稼働 (Work)", bg: "bg-blue-600", text: "text-white", border: "border-blue-700", icon: "fa-user-gear", desc: "ブース内対応・展示運用" },
+            S: { code: "S", name: "シミュレータ班 (Sim)", bg: "bg-purple-600", text: "text-white", border: "border-purple-700", icon: "fa-gamepad", desc: "運転シミュレータ運用・案内担当" },
             B: { code: "B", name: "休憩 (Break)", bg: "bg-slate-300", text: "text-slate-700", border: "border-slate-400", icon: "fa-mug-hot", desc: "休憩・自由時間・水分補給" },
         };
 
@@ -190,13 +191,10 @@
         // 資格区分定義
         const QUAL_CERTIFIED = "✅認定Nゲージ技術者";
         const QUAL_UNCERTIFIED = "🔰Nゲージ補助扱者";
+        const QUAL_SIMULATOR = "🎮シミュレータ班";
         const QUAL_GENERAL = "🙂一般スタッフ";
 
         // 実用型交代グループ（45分勤務・15分休憩ベース＋1時間以上連続勤務時の30分休憩延長設計）
-        // グループ1: 標準 45W - 15B
-        // グループ2: オフセット型 (15W - 15B - 45W - 15B)
-        // グループ3: ピーク時カバー 60W（4枠勤務）後に 30B（2枠拡張休憩）
-        // グループ4: ピーク時後半カバー 60W（4枠勤務）後に 30B（2枠拡張休憩）
         const GROUP_PATTERNS = {
             1: ["W", "W", "W", "B", "W", "W", "W", "B", "W", "W", "W", "B", "W", "W", "W", "B", "W", "W", "W", "B"],
             2: ["W", "B", "W", "W", "W", "B", "W", "W", "W", "B", "W", "W", "W", "B", "W", "W", "W", "B", "W", "W"],
@@ -205,7 +203,7 @@
         };
 
         // メンバーリスト & グループ割り当て
-        // ※課題研究班の f2024204(石渡) はグループ1、f2024303(岩崎) はグループ2 に配置し、同時に休憩にならないよう完全排他化
+        // ※内山さん・奥田さん・谷口さんの3名を「🎮シミュレータ班」資格へ設定
         const RAW_MEMBERS = [
             { id: "f2024204", name: "石渡 大貴", qual: QUAL_CERTIFIED, isResearch: true, group: 1 },
             { id: "f2024303", name: "岩崎 巧真", qual: QUAL_CERTIFIED, isResearch: true, group: 2 },
@@ -214,38 +212,71 @@
             { id: "f2024419", name: "丹波 翔大", qual: QUAL_UNCERTIFIED, isResearch: false, group: 1 },
             { id: "f2025607", name: "河津 政宗", qual: QUAL_UNCERTIFIED, isResearch: false, group: 2 },
             { id: "F2024116", name: "世良 尚之", qual: QUAL_GENERAL, isResearch: false, group: 3 },
-            { id: "F2025206", name: "内山 晴翔", qual: QUAL_GENERAL, isResearch: false, group: 4 },
-            { id: "F2025210", name: "奥田 貫友", qual: QUAL_GENERAL, isResearch: false, group: 1 },
-            { id: "F2025221", name: "谷口 幹尚", qual: QUAL_GENERAL, isResearch: false, group: 2 },
+            { id: "F2025206", name: "内山 晴翔", qual: QUAL_SIMULATOR, isResearch: false, group: 4 },
+            { id: "F2025210", name: "奥田 貫友", qual: QUAL_SIMULATOR, isResearch: false, group: 1 },
+            { id: "F2025221", name: "谷口 幹尚", qual: QUAL_SIMULATOR, isResearch: false, group: 2 },
             { id: "F2025225", name: "中村 恵吾", qual: QUAL_GENERAL, isResearch: false, group: 3 },
             { id: "F2025608", name: "菅野 圭太", qual: QUAL_GENERAL, isResearch: false, group: 4 },
             { id: "F2025620", name: "田中 亮成", qual: QUAL_GENERAL, isResearch: false, group: 1 },
             { id: "F2026309", name: "尾沢 莉玖", qual: QUAL_GENERAL, isResearch: false, group: 2 }
         ];
 
-        // メンバーデータ生成と稼働時間計算
-        const MEMBERS_DATA = RAW_MEMBERS.map((m) => {
-            const pattern = GROUP_PATTERNS[m.group];
-            const shifts = {};
-            let wCount = 0;
-
-            SLOTS.forEach((slot, idx) => {
-                const roleCode = pattern[idx];
-                shifts[slot] = roleCode;
-                if (roleCode === "W") wCount++;
+        // 各時間帯（スロット）ごとに、必ず「厳密に1名のみ」を S にアサインし、選ばれなかったメンバーは W のまま維持する
+        const generateShiftsData = () => {
+            const baseData = RAW_MEMBERS.map(m => {
+                const pattern = GROUP_PATTERNS[m.group];
+                const shifts = {};
+                SLOTS.forEach((slot, idx) => {
+                    shifts[slot] = pattern[idx];
+                });
+                return { ...m, shifts };
             });
 
-            const totalMinutes = wCount * 15;
-            const hours = Math.floor(totalMinutes / 60);
-            const mins = totalMinutes % 60;
-            const totalFormatted = `${hours}時間${mins > 0 ? `${mins}分` : ''}`;
+            let simTurnIndex = 0;
 
-            return {
-                ...m,
-                total: totalFormatted,
-                shifts
-            };
-        });
+            SLOTS.forEach(slot => {
+                // シミュレータ班資格を持ち、かつこの枠で稼働（W）可能なメンバーを抽出
+                const availableSimStaff = baseData.map((m, idx) => ({ m, idx }))
+                    .filter(item => item.m.qual === QUAL_SIMULATOR && item.m.shifts[slot] === "W");
+
+                if (availableSimStaff.length > 0) {
+                    // 該当者の中から順番に「1名のみ」を選出し、S に置き換え
+                    const chosenIdx = availableSimStaff[simTurnIndex % availableSimStaff.length].idx;
+                    baseData[chosenIdx].shifts[slot] = "S";
+                    simTurnIndex++;
+                    // 選ばれなかったシミュレータ班メンバーの shifts[slot] は "W" のまま維持される
+                } else {
+                    // 万が一シミュレータ班資格者が全員休憩中の場合は、稼働中の一般メンバーから「1名のみ」選出
+                    const fallbackStaff = baseData.map((m, idx) => ({ m, idx }))
+                        .filter(item => item.m.shifts[slot] === "W");
+                    if (fallbackStaff.length > 0) {
+                        const chosenIdx = fallbackStaff[simTurnIndex % fallbackStaff.length].idx;
+                        baseData[chosenIdx].shifts[slot] = "S";
+                        simTurnIndex++;
+                    }
+                }
+            });
+
+            // 総稼働時間の計算 (W + S)
+            return baseData.map(m => {
+                let wCount = 0;
+                SLOTS.forEach(slot => {
+                    if (m.shifts[slot] === "W" || m.shifts[slot] === "S") wCount++;
+                });
+
+                const totalMinutes = wCount * 15;
+                const hours = Math.floor(totalMinutes / 60);
+                const mins = totalMinutes % 60;
+                const totalFormatted = `${hours}時間${mins > 0 ? `${mins}分` : ''}`;
+
+                return {
+                    ...m,
+                    total: totalFormatted
+                };
+            });
+        };
+
+        const MEMBERS_DATA = generateShiftsData();
 
         function ShiftApp() {
             const [selectedSlot, setSelectedSlot] = React.useState("10:00");
@@ -274,6 +305,7 @@
             });
 
             const totalWorkCount = getActiveStaffAtSlot(selectedSlot).filter(m => m.roleCode === "W").length;
+            const totalSimCount = getActiveStaffAtSlot(selectedSlot).filter(m => m.roleCode === "S").length;
             const totalBreakCount = getActiveStaffAtSlot(selectedSlot).filter(m => m.roleCode === "B").length;
 
             return (
@@ -320,7 +352,7 @@
                                 <div>
                                     <h1 className="text-base sm:text-lg font-bold leading-tight flex flex-wrap items-center gap-1.5 sm:gap-2">
                                         <span>鉄道ではぐくむ幸</span>
-                                        <span className="bg-blue-800 text-blue-200 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium">45W-15B標準モデル</span>
+                                        <span className="bg-blue-800 text-blue-200 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium">45W-15B＋シミュレータ1名選出モデル</span>
                                     </h1>
                                     <p className="text-[11px] sm:text-xs text-slate-400">TekSMaS - 実用型シフト管理システム</p>
                                 </div>
@@ -335,7 +367,7 @@
                         <div className="bg-blue-50 border-l-4 border-blue-500 p-3.5 rounded-r-xl shadow-sm text-blue-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                                 <i className="fa-solid fa-circle-info text-blue-600 text-base flex-shrink-0"></i>
-                                <span><strong>運用ガイド:</strong> 基本は45分勤務・15分休憩（45W-15B）。ピーク等で連続勤務が1時間（4スロット）に及んだ場合は休憩を30分（2スロット）に拡大する疲労防止モデルを適用しています。</span>
+                                <span><strong>運用ガイド:</strong> 基本は45分勤務・15分休憩（45W-15B）。シミュレータ班の中から各時間帯「1名のみ」がS（シミュレータ担当）にアサインされ、重複分はW（一般稼働）として自動制御されます。</span>
                             </div>
                         </div>
 
@@ -377,9 +409,12 @@
                                             </h2>
                                         </div>
 
-                                        <div className="flex items-center gap-3 text-xs">
+                                        <div className="flex items-center gap-2 text-xs flex-wrap">
                                             <span className="bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full">
-                                                稼働 (W): {totalWorkCount} 名
+                                                一般稼働 (W): {totalWorkCount} 名
+                                            </span>
+                                            <span className="bg-purple-100 text-purple-800 font-bold px-3 py-1 rounded-full">
+                                                シミュレータ (S): {totalSimCount} 名
                                             </span>
                                             <span className="bg-slate-200 text-slate-700 font-bold px-3 py-1 rounded-full">
                                                 休憩 (B): {totalBreakCount} 名
@@ -391,6 +426,7 @@
                                     <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1.5">
                                         {SLOTS.map((slot) => {
                                             const wStaff = getActiveStaffAtSlot(slot).filter(m => m.roleCode === "W").length;
+                                            const sStaff = getActiveStaffAtSlot(slot).filter(m => m.roleCode === "S").length;
                                             const isSelected = selectedSlot === slot;
                                             return (
                                                 <button
@@ -402,8 +438,8 @@
                                                         }`}
                                                 >
                                                     <span className="text-xs font-semibold">{slot}</span>
-                                                    <span className={`text-[10px] mt-0.5 font-medium px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
-                                                        {wStaff}名W
+                                                    <span className={`text-[9px] mt-0.5 font-medium px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                                                        {wStaff}W/{sStaff}S
                                                     </span>
                                                 </button>
                                             );
@@ -459,6 +495,7 @@
                                             const r = staff.role;
                                             const isCertified = staff.qual === QUAL_CERTIFIED;
                                             const isUncertified = staff.qual === QUAL_UNCERTIFIED;
+                                            const isSimulatorQual = staff.qual === QUAL_SIMULATOR;
 
                                             return (
                                                 <div key={staff.id} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all p-4 flex flex-col justify-between relative overflow-hidden group">
@@ -478,7 +515,9 @@
                                                                         ? 'bg-amber-50 text-amber-700 border-amber-300'
                                                                         : isUncertified
                                                                             ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                                                                            : 'bg-slate-50 text-slate-600 border-slate-200'
+                                                                            : isSimulatorQual
+                                                                                ? 'bg-purple-50 text-purple-700 border-purple-300 font-bold'
+                                                                                : 'bg-slate-50 text-slate-600 border-slate-200'
                                                                         }`}>
                                                                         {staff.qual}
                                                                     </span>
@@ -557,6 +596,7 @@
                                             {MEMBERS_DATA.map((member) => {
                                                 const isCertified = member.qual === QUAL_CERTIFIED;
                                                 const isUncertified = member.qual === QUAL_UNCERTIFIED;
+                                                const isSimulatorQual = member.qual === QUAL_SIMULATOR;
 
                                                 return (
                                                     <tr key={member.id} className="hover:bg-slate-50/80 transition-colors">
@@ -565,7 +605,7 @@
                                                                 {member.name}
                                                                 {member.isResearch && <span className="text-[9px] bg-purple-100 text-purple-700 px-1 rounded">研</span>}
                                                             </div>
-                                                            <div className={`text-[9px] font-semibold ${isCertified ? 'text-amber-600' : isUncertified ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                                            <div className={`text-[9px] font-semibold ${isCertified ? 'text-amber-600' : isUncertified ? 'text-emerald-600' : isSimulatorQual ? 'text-purple-600 font-bold' : 'text-slate-400'}`}>
                                                                 {member.qual}
                                                             </div>
                                                         </td>
@@ -642,7 +682,7 @@
                                         <div className="text-center py-16 text-slate-400 space-y-2">
                                             <i className="fa-solid fa-address-card text-5xl text-slate-300"></i>
                                             <p className="font-semibold text-slate-600">左側のリストからメンバーを選択してください</p>
-                                            <p className="text-xs">選択したスタッフの1日のW-Bタイムラインが表示されます</p>
+                                            <p className="text-xs">選択したスタッフの1日のW-S-Bタイムラインが表示されます</p>
                                         </div>
                                     ) : (
                                         <React.Fragment>
