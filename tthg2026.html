@@ -204,22 +204,22 @@
             4: ["W", "W", "B", "W", "W", "W", "W", "B", "B", "W", "W", "W", "B", "W", "W", "W", "W", "B", "B", "W"]
         };
 
-        // 当日参加メンバー（9名）
-        // 除外条件：尾沢・世良・課題研究班・Nゲージ認定技術者
-        // シミュレータ班対象者（5名）：佐久間、谷口、河津、田中、丹波
+        // 当日参加メンバー（10名）
+        // シミュレータ班指定メンバー（3名）：佐久間・丹波・大関
         const RAW_MEMBERS = [
             { id: "f2024303", name: "岩崎 巧真", qual: QUAL_CERTIFIED, isResearch: true, isSimEligible: false, group: 2 },
             { id: "f2026235", name: "山重 讓志郎", qual: QUAL_CERTIFIED, isResearch: false, isSimEligible: false, group: 3 },
             { id: "f2025217", name: "佐久間 亮成", qual: QUAL_SIMULATOR, isResearch: false, isSimEligible: true, group: 4 },
             { id: "f2024419", name: "丹波 翔大", qual: QUAL_SIMULATOR, isResearch: false, isSimEligible: true, group: 1 },
-            { id: "f2025607", name: "河津 政宗", qual: QUAL_SIMULATOR, isResearch: false, isSimEligible: true, group: 2 },
+            { id: "F2026308", name: "大関 春杜", qual: QUAL_SIMULATOR, isResearch: false, isSimEligible: true, group: 3 },
+            { id: "f2025607", name: "河津 政宗", qual: QUAL_UNCERTIFIED, isResearch: false, isSimEligible: false, group: 2 },
             { id: "F2024116", name: "世良 尚之", qual: QUAL_GENERAL, isResearch: false, isSimEligible: false, group: 3 },
-            { id: "F2025221", name: "谷口 幹尚", qual: QUAL_SIMULATOR, isResearch: false, isSimEligible: true, group: 2 },
-            { id: "F2025620", name: "田中 亮成", qual: QUAL_SIMULATOR, isResearch: false, isSimEligible: true, group: 1 },
+            { id: "F2025221", name: "谷口 幹尚", qual: QUAL_GENERAL, isResearch: false, isSimEligible: false, group: 2 },
+            { id: "F2025620", name: "田中 亮成", qual: QUAL_GENERAL, isResearch: false, isSimEligible: false, group: 1 },
             { id: "F2026309", name: "尾沢 莉玖", qual: QUAL_GENERAL, isResearch: false, isSimEligible: false, group: 2 }
         ];
 
-        // 各時間帯（スロット）ごとに対象メンバー（isSimEligible === true）のWから1名のみ選出
+        // 各時間帯（スロット）ごとに、指定の3名（佐久間・丹波・大関）の中からWとなっている1名のみを S に選出
         const generateShiftsData = () => {
             const baseData = RAW_MEMBERS.map(m => {
                 const pattern = GROUP_PATTERNS[m.group];
@@ -233,7 +233,7 @@
             let simTurnIndex = 0;
 
             SLOTS.forEach(slot => {
-                // シミュレータ対象メンバー（尾沢・世良・認定者・研究班以外）の中から、この枠で稼働（W）可能な人を抽出
+                // シミュレータ担当対象の3名の中で、このスロットで稼働（W）中の人を抽出
                 const availableSimStaff = baseData.map((m, idx) => ({ m, idx }))
                     .filter(item => item.m.isSimEligible && item.m.shifts[slot] === "W");
 
@@ -339,7 +339,7 @@
                                 <div>
                                     <h1 className="text-base sm:text-lg font-bold leading-tight flex flex-wrap items-center gap-1.5 sm:gap-2">
                                         <span>鉄道ではぐくむ幸</span>
-                                        <span className="bg-blue-800 text-blue-200 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium">シミュレータ条件厳選モデル</span>
+                                        <span className="bg-blue-800 text-blue-200 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium">シミュレータ（佐久間・丹波・大関）モデル</span>
                                     </h1>
                                     <p className="text-[11px] sm:text-xs text-slate-400">TekSMaS - 実用型シフト管理システム</p>
                                 </div>
@@ -354,7 +354,7 @@
                         <div className="bg-blue-50 border-l-4 border-blue-500 p-3.5 rounded-r-xl shadow-sm text-blue-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                                 <i className="fa-solid fa-circle-info text-blue-600 text-base flex-shrink-0"></i>
-                                <span><strong>運用ガイド:</strong> 尾沢・世良・課題研究班・Nゲージ認定者を除いた5名（佐久間・谷口・河津・田中・丹波）の中から各時間帯1名がS（シミュレータ担当）にアサインされます。</span>
+                                <span><strong>運用ガイド:</strong> 基本は45W-15B。シミュレータ班（佐久間・丹波・大関）の3名から、各時間帯1名がS（シミュレータ担当）にアサインされます。</span>
                             </div>
                         </div>
 
