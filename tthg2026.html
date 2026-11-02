@@ -16,7 +16,9 @@
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap"
+        rel="stylesheet">
 
     <style>
         body {
@@ -202,26 +204,22 @@
             4: ["W", "W", "B", "W", "W", "W", "W", "B", "B", "W", "W", "W", "B", "W", "W", "W", "W", "B", "B", "W"]
         };
 
-        // メンバーリスト & グループ割り当て
-        // ※内山さん・奥田さん・谷口さんの3名を「🎮シミュレータ班」資格へ設定
+        // 当日参加メンバー（9名）
+        // 除外条件：尾沢・世良・課題研究班・Nゲージ認定技術者
+        // シミュレータ班対象者（5名）：佐久間、谷口、河津、田中、丹波
         const RAW_MEMBERS = [
-            { id: "f2024204", name: "石渡 大貴", qual: QUAL_CERTIFIED, isResearch: true, group: 1 },
-            { id: "f2024303", name: "岩崎 巧真", qual: QUAL_CERTIFIED, isResearch: true, group: 2 },
-            { id: "f2026235", name: "山重 讓志郎", qual: QUAL_CERTIFIED, isResearch: false, group: 3 },
-            { id: "f2025217", name: "佐久間 亮成", qual: QUAL_UNCERTIFIED, isResearch: false, group: 4 },
-            { id: "f2024419", name: "丹波 翔大", qual: QUAL_UNCERTIFIED, isResearch: false, group: 1 },
-            { id: "f2025607", name: "河津 政宗", qual: QUAL_UNCERTIFIED, isResearch: false, group: 2 },
-            { id: "F2024116", name: "世良 尚之", qual: QUAL_GENERAL, isResearch: false, group: 3 },
-            { id: "F2025206", name: "内山 晴翔", qual: QUAL_SIMULATOR, isResearch: false, group: 4 },
-            { id: "F2025210", name: "奥田 貫友", qual: QUAL_SIMULATOR, isResearch: false, group: 1 },
-            { id: "F2025221", name: "谷口 幹尚", qual: QUAL_SIMULATOR, isResearch: false, group: 2 },
-            { id: "F2025225", name: "中村 恵吾", qual: QUAL_GENERAL, isResearch: false, group: 3 },
-            { id: "F2025608", name: "菅野 圭太", qual: QUAL_GENERAL, isResearch: false, group: 4 },
-            { id: "F2025620", name: "田中 亮成", qual: QUAL_GENERAL, isResearch: false, group: 1 },
-            { id: "F2026309", name: "尾沢 莉玖", qual: QUAL_GENERAL, isResearch: false, group: 2 }
+            { id: "f2024303", name: "岩崎 巧真", qual: QUAL_CERTIFIED, isResearch: true, isSimEligible: false, group: 2 },
+            { id: "f2026235", name: "山重 讓志郎", qual: QUAL_CERTIFIED, isResearch: false, isSimEligible: false, group: 3 },
+            { id: "f2025217", name: "佐久間 亮成", qual: QUAL_SIMULATOR, isResearch: false, isSimEligible: true, group: 4 },
+            { id: "f2024419", name: "丹波 翔大", qual: QUAL_SIMULATOR, isResearch: false, isSimEligible: true, group: 1 },
+            { id: "f2025607", name: "河津 政宗", qual: QUAL_SIMULATOR, isResearch: false, isSimEligible: true, group: 2 },
+            { id: "F2024116", name: "世良 尚之", qual: QUAL_GENERAL, isResearch: false, isSimEligible: false, group: 3 },
+            { id: "F2025221", name: "谷口 幹尚", qual: QUAL_SIMULATOR, isResearch: false, isSimEligible: true, group: 2 },
+            { id: "F2025620", name: "田中 亮成", qual: QUAL_SIMULATOR, isResearch: false, isSimEligible: true, group: 1 },
+            { id: "F2026309", name: "尾沢 莉玖", qual: QUAL_GENERAL, isResearch: false, isSimEligible: false, group: 2 }
         ];
 
-        // 各時間帯（スロット）ごとに、必ず「厳密に1名のみ」を S にアサインし、選ばれなかったメンバーは W のまま維持する
+        // 各時間帯（スロット）ごとに対象メンバー（isSimEligible === true）のWから1名のみ選出
         const generateShiftsData = () => {
             const baseData = RAW_MEMBERS.map(m => {
                 const pattern = GROUP_PATTERNS[m.group];
@@ -235,25 +233,14 @@
             let simTurnIndex = 0;
 
             SLOTS.forEach(slot => {
-                // シミュレータ班資格を持ち、かつこの枠で稼働（W）可能なメンバーを抽出
+                // シミュレータ対象メンバー（尾沢・世良・認定者・研究班以外）の中から、この枠で稼働（W）可能な人を抽出
                 const availableSimStaff = baseData.map((m, idx) => ({ m, idx }))
-                    .filter(item => item.m.qual === QUAL_SIMULATOR && item.m.shifts[slot] === "W");
+                    .filter(item => item.m.isSimEligible && item.m.shifts[slot] === "W");
 
                 if (availableSimStaff.length > 0) {
-                    // 該当者の中から順番に「1名のみ」を選出し、S に置き換え
                     const chosenIdx = availableSimStaff[simTurnIndex % availableSimStaff.length].idx;
                     baseData[chosenIdx].shifts[slot] = "S";
                     simTurnIndex++;
-                    // 選ばれなかったシミュレータ班メンバーの shifts[slot] は "W" のまま維持される
-                } else {
-                    // 万が一シミュレータ班資格者が全員休憩中の場合は、稼働中の一般メンバーから「1名のみ」選出
-                    const fallbackStaff = baseData.map((m, idx) => ({ m, idx }))
-                        .filter(item => item.m.shifts[slot] === "W");
-                    if (fallbackStaff.length > 0) {
-                        const chosenIdx = fallbackStaff[simTurnIndex % fallbackStaff.length].idx;
-                        baseData[chosenIdx].shifts[slot] = "S";
-                        simTurnIndex++;
-                    }
                 }
             });
 
@@ -352,7 +339,7 @@
                                 <div>
                                     <h1 className="text-base sm:text-lg font-bold leading-tight flex flex-wrap items-center gap-1.5 sm:gap-2">
                                         <span>鉄道ではぐくむ幸</span>
-                                        <span className="bg-blue-800 text-blue-200 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium">45W-15B＋シミュレータ1名選出モデル</span>
+                                        <span className="bg-blue-800 text-blue-200 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium">シミュレータ条件厳選モデル</span>
                                     </h1>
                                     <p className="text-[11px] sm:text-xs text-slate-400">TekSMaS - 実用型シフト管理システム</p>
                                 </div>
@@ -367,7 +354,7 @@
                         <div className="bg-blue-50 border-l-4 border-blue-500 p-3.5 rounded-r-xl shadow-sm text-blue-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                                 <i className="fa-solid fa-circle-info text-blue-600 text-base flex-shrink-0"></i>
-                                <span><strong>運用ガイド:</strong> 基本は45分勤務・15分休憩（45W-15B）。シミュレータ班の中から各時間帯「1名のみ」がS（シミュレータ担当）にアサインされ、重複分はW（一般稼働）として自動制御されます。</span>
+                                <span><strong>運用ガイド:</strong> 尾沢・世良・課題研究班・Nゲージ認定者を除いた5名（佐久間・谷口・河津・田中・丹波）の中から各時間帯1名がS（シミュレータ担当）にアサインされます。</span>
                             </div>
                         </div>
 
