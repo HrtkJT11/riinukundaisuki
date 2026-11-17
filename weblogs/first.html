@@ -1,0 +1,134 @@
+<!-- ==========================================
+     1. 見た目（CSS）の設定
+     ========================================== -->
+<style>
+  /* 記事全体の囲い枠（フォントや余白を整える） */
+  .travel-post-container {
+    font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+    color: #333333;
+    line-height: 1.8;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  /* 見出しのデザイン（ブログのテーマカラーに合わせた左線と背景） */
+  .travel-heading {
+    border-left: 6px solid #1abc9c;
+    background-color: #f0fdfa;
+    padding: 10px 15px;
+    font-size: 1.25em;
+    font-weight: bold;
+    color: #0e6251;
+    margin-top: 25px;
+    margin-bottom: 15px;
+    border-radius: 0 6px 6px 0;
+  }
+
+  /* 旅の基本データボックス */
+  .travel-info-box {
+    background-color: #ffffff;
+    border: 2px solid #a3e4d7;
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin: 20px 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+
+  /* 箇条書きの余白調整 */
+  .travel-info-box ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  /* 詳細を開くボタンのデザイン */
+  .toggle-btn {
+    background-color: #1abc9c;
+    color: #ffffff;
+    border: none;
+    padding: 10px 18px;
+    font-size: 0.95em;
+    font-weight: bold;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: background-color 0.3s ease; /* マウスを乗せた時に色を滑らかに変える */
+    margin-top: 10px;
+  }
+
+  /* ボタンにマウスを乗せた（ホバーした）時の色 */
+  .toggle-btn:hover {
+    background-color: #148f77;
+  }
+
+  /* 最初は隠しておく詳細エリア */
+  .hidden-memo {
+    display: none; /* 画面に表示しない設定 */
+    background-color: #f9f9f9;
+    border-left: 4px solid #95a5a6;
+    padding: 12px 16px;
+    margin-top: 12px;
+    border-radius: 4px;
+    font-size: 0.95em;
+  }
+</style>
+
+<!-- ==========================================
+     2. 記事の骨組み（HTML）
+     ========================================== -->
+<div class="travel-post-container">
+  <p>こんにちは！記念すべき最初の投稿です。今回はふらっと出かけたローカル線の旅の記録を残しておこうと思います。</p>
+
+  <!-- 旅のデータをまとめるボックス -->
+  <div class="travel-info-box">
+    <strong>🚃 今回の旅メモ</strong>
+    <ul>
+      <li><strong>目的地：</strong>海沿いの終着駅</li>
+      <li><strong>移動手段：</strong>普通列車（国鉄型車両）と路線バス</li>
+      <li><strong>天候：</strong>快晴</li>
+    </ul>
+  </div>
+
+  <!-- セクション見出し -->
+  <h3 class="travel-heading">車窓から見えた景色と乗り継ぎの記録</h3>
+  <p>朝早くに出発し、のんびりと揺られること数時間。途中駅での交換待ちの時間すらも、旅の醍醐味に感じられます。終着駅からは地元の路線バスに乗り換えて、岬の展望台まで足を延ばしました。</p>
+
+  <!-- JavaScriptで開閉するエリア -->
+  <div>
+    <!-- id="detailBtn" と id="detailContent" を目印にしてJSで操作する -->
+    <button id="detailBtn" class="toggle-btn" type="button">▼ 詳しい乗り継ぎ時刻・メモを見る</button>
+    <div id="detailContent" class="hidden-memo">
+      <p style="margin: 0;">
+        <strong>【乗り継ぎメモ】</strong><br>
+        08:15 始発駅発（普通列車） → 10:42 乗換駅着<br>
+        10:55 駅前バス停発（〇〇営業所行き） → 11:20 終点着<br>
+        ※バスの本数が1時間に1本なので、帰りの時刻確認は必須です！
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     3. 動きの仕組み（Vanilla JavaScript）
+     ========================================== -->
+<script>
+  // HTMLの中から「detailBtn」というIDがついたボタンを探して変数に入れる
+  const btn = document.getElementById("detailBtn");
+  
+  // HTMLの中から「detailContent」というIDがついた隠れメモを探して変数に入れる
+  const content = document.getElementById("detailContent");
+
+  // ボタンがクリックされた時の処理を登録する
+  btn.addEventListener("click", function() {
+    // もし隠れメモが「非表示（none）」または「まだ何も設定されていない（""）」状態なら
+    if (content.style.display === "none" || content.style.display === "") {
+      // 隠れメモをブロック要素として画面に表示する
+      content.style.display = "block";
+      // ボタンの文字を「閉じる」用の表記に書き換える
+      btn.textContent = "▲ 詳しい乗り継ぎ時刻・メモを閉じる";
+    } else {
+      // すでに表示されている場合は、再び「非表示（none）」にする
+      content.style.display = "none";
+      // ボタンの文字を元の「見る」用の表記に戻す
+      btn.textContent = "▼ 詳しい乗り継ぎ時刻・メモを見る";
+    }
+  });
+</script>
